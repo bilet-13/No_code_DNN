@@ -16,10 +16,6 @@ EPOCHS = 100
 LEARNING_RATE = 0.001
 MODELS_FOLDER_PATH = 'models'
 
-# Create the models directory if it does not exist
-if not os.path.isdir(MODELS_FOLDER_PATH):
-    os. makedirs(MODELS_FOLDER_PATH)
-
 
 class DNN(nn.Module):
     def __init__(self, input_size, hidden1_size, hidden2_size, output_size):
@@ -28,6 +24,7 @@ class DNN(nn.Module):
         self.hidden1_size = hidden1_size
         self.hidden2_size = hidden2_size
         self.output_size = output_size
+
         layers = [nn.Linear(input_size, hidden1_size), nn.ReLU()]
         if hidden2_size:
             layers.append(nn.Linear(hidden1_size, hidden2_size))
@@ -39,6 +36,61 @@ class DNN(nn.Module):
 
     def forward(self, x):
         return self.model(x)
+
+
+class DataProcessor():
+    def __init__(self):
+        self.data = None
+        self.input_columns = None
+        self.target_columns = None
+        self.X_train = None
+        self.X_test = None
+        self.y_train = None
+        self.y_test = None
+
+    def load_data(self, file_name, input_columns, target_columns):
+        self.data = self.__read_file(file_name)
+        self.input_columns = input_columns
+        self.target_columns = target_columns
+
+    def preprocess_data(self):
+        if self.data:
+            self.X_train, self.X_test, self.y_train, self.y_test = self.__preprocess_data()
+
+    def get_training_data(self):
+        return self.X_train, self.y_train
+
+    def get_testing_data(self):
+        return self.X_test, self.y_test
+
+    def __read_file(self, file_name):
+        return pd.read_csv(file_name, header=None)
+
+    def __preprocess_data(self):
+        input_columns = [i - 1 for i in self.input_columns]
+        target_columns = [i - 1 for i in self.target_columns]
+
+        X = self.data.iloc[:, input_columns]
+        y = self.data.iloc[:, target_columns]
+
+        non_null_indices = self.__get_non_null_element_index(X, y)
+        X = X[non_null_indices]
+        y = y[non_null_indices]
+
+        # No need to convert y to int or decrement by 1 for regression
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=TEST_SIZE_PERCENT, random_state=RANDOM_SEED)
+
+        return self.__convert_dataframes_to_tensors(X_train, X_test, y_train, y_test)
+
+    def __convert_dataframes_to_tensors(self, *args):
+        tensors = [torch.from_numpy(df.values).float() for df in args]
+
+        return tensors
+
+    def __get_non_null_element_index(self, X, y):
+        return ~X.isnull().any(axis=1) & ~y.isnull().any(axis=1)
 
 
 def parse_args():
@@ -55,29 +107,6 @@ def parse_args():
     parser.add_argument('--hidden2_size', type=int, default=None,
                         help='Number of nodes in second hidden layer (optional)')
     return parser.parse_args()
-
-
-def get_non_null_element_index(X, y):
-    return ~X.isnull().any(axis=1) & ~y.isnull().any(axis=1)
-
-
-def preprocess_data(data, input_columns, target_columns):
-    input_columns = [i - 1 for i in input_columns]
-    target_columns = [i - 1 for i in target_columns]
-
-    X = data.iloc[:, input_columns]
-    y = data.iloc[:, target_columns]
-
-    non_null_indices = get_non_null_element_index(X, y)
-    X = X[non_null_indices]
-    y = y[non_null_indices]
-
-    # No need to convert y to int or decrement by 1 for regression
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=TEST_SIZE_PERCENT, random_state=RANDOM_SEED)
-
-    return X_train, X_test, y_train, y_test
 
 
 def train_model(model, X_train, y_train):
@@ -99,7 +128,7 @@ def train_model(model, X_train, y_train):
         rmse_loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1)
         optimizer.step()
-        
+
         if DEBUG:
             print(f'Epoch {epoch+1}/{EPOCHS}, Loss: {loss.item()}')
 
@@ -147,25 +176,26 @@ def evaluate_model(model, X_test, y_test):
 
 
 def main():
-    args = parse_args()
+    # Create the models directory if it does not exist
+    if not os.path.isdir(MODELS_FOLDER_PATH):
+        os. makedirs(MODELS_FOLDER_PATH)
 
-    data = pd.read_csv(args.file_name, header=None)
-    # Adjust to handle multiple target columns
-    X_train, X_test, y_train, y_test = preprocess_data(
-        data, args.input_columns, args.target_columns)
+    args = parse_args()
 
     input_size = len(args.input_columns)
     # Get the output size from arguments
     output_size = len(args.target_columns)
     model = DNN(input_size, args.hidden1_size, args.hidden2_size, output_size)
 
-    # Convert DataFrames to Tensors
-    X_train = torch.from_numpy(X_train.values).float()
-    X_test = torch.from_numpy(X_test.values).float()
-
-    # Convert target to float and reshape for multiple outputs
-    y_train = torch.from_numpy(y_train.values).float()
-    y_test = torch.from_numpy(y_test.values).float()
+    data_processor = DataProcessor()
+    data_processor.load_data(
+        args.file_name,
+        args.input_columns,
+        args.target_columns
+    )
+    data_processor.preprocess_data()
+    X_train, y_train = data_processor.get_training_data()
+    X_test, y_test = data_processor.get_testing_data()
 
     train_model(model, X_train, y_train)
 
