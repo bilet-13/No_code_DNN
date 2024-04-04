@@ -41,7 +41,7 @@ source venv/bin/activate
 ```
 Install necessary packages
 ```sh
-pip install -r requirements
+pip install -r build/requirements.txt
 ```
 Run the src/app.py to start server
 ```sh
