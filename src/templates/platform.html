@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Model Training Platform</title>
+    <style>
+      /* General Styles */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #eef2f7;
+        margin: 0;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .block {
+        margin-bottom: 30px;
+      }
+
+      h3 {
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 5px;
+        margin-bottom: 20px;
+        color: #3498db;
+      }
+
+      /* Form Styles */
+      form {
+        display: flex;
+        flex-direction: column;
+      }
+
+      input[type="file"],
+      input[type="text"],
+      input[type="number"],
+      select {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 15px;
+        border: 1px solid #d3dce6; /* Light gray border */
+        border-radius: 4px;
+        background-color: #fafafa; /* Light gray background */
+        color: #333; /* Dark gray text */
+      }
+
+      .training-form input,
+      .training-form select {
+        width: calc(100% - 20px); /* Adjust width based on padding */
+      }
+
+      input[type="submit"],
+      button {
+        padding: 10px 20px;
+        background-color: #3498db; /* Softer blue */
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+
+      input[type="submit"]:hover,
+      button:hover {
+        background-color: #2980b9; /* Slightly darker blue on hover */
+      }
+
+      /* Training Section Styles */
+      .training-container {
+        display: flex;
+        flex-direction: column;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+
+      .column {
+        flex: 1;
+        min-width: 200px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .column label {
+        margin-bottom: 5px;
+      }
+
+      /* Response Message Styles */
+      /* Response Message Styles */
+      #uploadStatus,
+      #response {
+        color:  #27ae60; /* Green for success messages */
+        margin-top: 10px;
+      }
+      /* Additional Styles for Consistency */
+      .training-form input,
+      .training-form select {
+        width: calc(100% - 20px);
+      }
+
+      /* Add some padding to the bottom of the container */
+      .container {
+        padding-bottom: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="block">
+        <h3>File Upload Section</h3>
+        <form method="post" enctype="multipart/form-data">
+          <input type="file" id="data" name="file" />
+          <!-- Ensure the name attribute is 'file' -->
+          <input type="submit" value="Upload" />
+          <p id="uploadStatus"></p>
+        </form>
+      </div>
+
+      <div class="block">
+        <h3>Training Section</h3>
+        <form class="training-form">
+          <div class="training-container">
+            <div class="column">
+              <label for="dropdown">File of training data:</label>
+              <select id="dropdown">
+                <option value="disabled selected">Select training file</option>
+              </select>
+            </div>
+            <div class="column">
+              <label for="input_columns" required
+                >Input columns(please input index of columns ex: 1 2):</label
+              >
+              <input type="text" id="input_columns" name="input_columns" />
+              <label for="target_columns" min="1" required
+                >Target columns(please input index of columns ex: 5 7):</label
+              >
+              <input type="text" id="target_columns" name="target_columns" />
+            </div>
+            <div class="column">
+              <label for="hidden_layer_1"
+                >Number of nodes in hidden layer 1:</label
+              >
+              <input
+                type="number"
+                id="hidden_layer_1"
+                name="hidden_layer_1"
+                min="1"
+                step="1"
+                required
+              />
+              <label for="hidden_layer_2"
+                >Number of nodes in hidden layer 2:</label
+              >
+              <input
+                type="number"
+                id="hidden_layer_2"
+                name="hidden_layer_2"
+                min="0"
+                value="0"
+                step="1"
+              />
+            </div>
+            <button type="submit">Train model</button>
+          </div>
+        </form>
+        <div class="block">
+          <p id="response"></p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document
+        .querySelector("form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent the default form submission
+
+          var fileInput = document.getElementById("data");
+          var file = fileInput.files[0];
+          console.log(file);
+          if (file) {
+            // Make sure there's a file selected
+            var formData = new FormData();
+            formData.append("file", file); // The key must match the server's expected key
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/data", true);
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                document.getElementById("uploadStatus").innerText =
+                  "File uploaded successfully";
+              } else {
+                document.getElementById("uploadStatus").innerText =
+                  "File upload failed";
+              }
+            };
+            xhr.send(formData);
+          }
+        });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Replace 'your_api_url' with the actual API  URL that lists files.
+        const apiUrl = "/data";
+
+        // Create an XHR object.
+        const xhr = new XMLHttpRequest();
+
+        // Open the request.
+        xhr.open("GET", apiUrl);
+
+        // Set the request header.
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        // Handle the response.
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            // Parse the JSON response.
+            const data = JSON.parse(xhr.responseText);
+
+            // Loop through the file list and create options.
+            data.files.forEach(function (file) {
+              const option = document.createElement("option");
+              option.value = file;
+              option.textContent = file;
+              document.getElementById("dropdown").appendChild(option);
+            });
+          } else {
+            // Handle errors here, e.g., show an error message.
+            console.error("API call failed.");
+          }
+        };
+
+        // Send the request.
+        xhr.send();
+      });
+
+      document
+        .querySelector(".training-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault(); // Prevent the default form submission
+          console.log("funciton calling");
+          const fileName = getSelectedOption("dropdown");
+          if (fileName == null) {
+            alert("Please select the training data file name.");
+            return; // Break the function
+          }
+
+          const inputColumns = get_columns("input_columns");
+          const targetColumns = get_columns("target_columns");
+          if (!inputColumns || !targetColumns) {
+            alert(
+              "Please input numbers for both input columns and target columns, separated by spaces (e.g., '9 7')."
+            );
+            return; // Break the function
+          }
+
+          valid_and_number1 = validateAndGetPositiveNumber("hidden_layer_1");
+          valid_and_number2 = validateAndGetPositiveNumber("hidden_layer_2");
+          if (!valid_and_number1.valid || !valid_and_number2.valid) {
+            alert("Please input integers for both hiddedn layer 1 and 2.");
+            return;
+          }
+          const hidden1Size = valid_and_number1["number"];
+          const hidden2Size = valid_and_number2["number"];
+
+          const payload = {
+            file_name: fileName,
+            input_columns: inputColumns,
+            target_columns: targetColumns,
+            hidden1_size: hidden1Size,
+            hidden2_size: hidden2Size,
+          };
+          var jsonData = JSON.stringify(payload);
+
+          // Create a new XMLHttpRequest object
+          var xhr = new XMLHttpRequest();
+
+          // Define the request method and URL
+          var url = "/train_model";
+          var method = "POST"; // Using GET method as specified in the cURL command
+
+          xhr.open(method, url, true);
+
+          // Set the request header to indicate to the server that you're sending JSON data
+          xhr.setRequestHeader("Content-Type", "application/json");
+
+          // Set up a function that is called when the request completes successfully
+          // Open the request
+
+          // Set the request headers
+
+          // Define the callback function for when the response is received
+          xhr.onreadystatechange = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+              // Get the response text and set it to the response element
+              var responseElement = document.getElementById("response");
+              responseElement.textContent = xhr.responseText;
+            }
+          };
+
+          // Send the request
+          xhr.send(jsonData);
+        });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Replace 'your_api_url' with the actual API  URL that lists files.
+        const apiUrl = "/data";
+
+        // Create an XHR object.
+        const xhr = new XMLHttpRequest();
+
+        // Open the request.
+        xhr.open("GET", apiUrl);
+
+        // Set the request header.
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        // Handle the response.
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            // Parse the JSON response.
+            const data = JSON.parse(xhr.responseText);
+
+            // Loop through the file list and create options.
+            data.files.forEach(function (file) {
+              const option = document.createElement("option");
+              option.value = file;
+              option.textContent = file;
+              document.getElementById("dropdown").appendChild(option);
+            });
+          } else {
+            // Handle errors here, e.g., show an error message.
+            console.error("API call failed.");
+          }
+        };
+
+        // Send the request.
+        xhr.send();
+      });
+
+      function get_columns(inputId) {
+        const inputElement = document.getElementById(inputId);
+        if (inputElement) {
+          const inputValue = inputElement.value.trim();
+          if (inputValue) {
+            return inputValue.split(" ").map(Number);
+          }
+        }
+        return [];
+      }
+
+      function getSelectedOption(selectId) {
+        var selectElement = document.getElementById(selectId);
+
+        if (!selectElement) {
+          console.error("Element with ID '" + selectId + "' not found.");
+          return null; // Return null if element is not found
+        }
+
+        // Method 1: Using selectedIndex
+        var selectedIndex = selectElement.selectedIndex;
+        var selectedOption1 = selectElement.options[selectedIndex].value;
+
+        // Return the selected option value
+        return selectedOption1; // You can return selectedOption2 if needed
+      }
+
+      function validateAndGetPositiveNumber(inputId) {
+        console.log(
+          "validateAndGetPositiveNumber called with inputId:",
+          inputId
+        );
+        const inputElement = document.getElementById(inputId);
+        if (inputElement) {
+          const inputValue = inputElement.value;
+
+          // Check if the value is a number and is an integer greater than or equal to 0
+          const isInteger = Number.isInteger(Number(inputValue));
+          const isValidPositiveNumber = isInteger && inputValue >= 0;
+
+          if (isValidPositiveNumber) {
+            const numberValue = parseInt(inputValue, 10);
+            return { valid: true, number: numberValue };
+          } else {
+            return { valid: false, number: null };
+          }
+        } else {
+          console.error(`Element with id "${inputId}" not found.`);
+          return { valid: false, number: null };
+        }
+      }
+    </script>
+  </body>
+</html>
