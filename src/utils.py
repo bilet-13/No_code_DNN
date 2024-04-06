@@ -9,8 +9,8 @@ def validate_payload(payload):
     return True
 
 
-def is_file_exists(file_name):
-    file_path = pathlib.Path(file_name)
+def is_file_in_folder(file_name, folder_path):
+    file_path = pathlib.Path(folder_path) / file_name
     return file_path.is_file()
 
 def is_folder(folder_path):
