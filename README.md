@@ -1,15 +1,15 @@
-# No_code_DNN( File Upload and Model Training Web Platform)
+# No_code_DNN( File Upload and Model Training Web Platform) 🚀
 
 This web platform allows users to upload CSV files and train a machine learning model using the uploaded data. The platform is built using Flask and provides a simple user interface to upload files and train the model with specified parameters.
 
-## Features
+## Features ✨
 
 - File upload section for uploading CSV files.
 - Training section for specifying model parameters and training the model.
 - Display of response messages for successful or failed operations.
 - API endpoints for uploading files and training models.
 
-## Usage
+## Usage 📖
 
 1. Navigate to the web page by running the Flask app.
 2. In the file upload section, choose a CSV file and click the "Upload" button.
@@ -18,13 +18,13 @@ This web platform allows users to upload CSV files and train a machine learning 
 5. Click the "Train model" button to start the training process.
 6. The response messages will display the status of the file upload and model training.
 
-## API Endpoints
+## API Endpoints 🛠️
 
 - `POST /data`: Uploads a CSV file to the server.
 - `GET /data`: Retrieves a list of available CSV files for training.
 - `POST /train_model`: Trains the model with the specified parameters from the payload.
 
-## Installation
+## Installation 💻 (Python version 3.11.5)
 
 Clone the repo
 ```sh
@@ -47,9 +47,9 @@ Run the src/app.py to start server
 ```sh
 python3 src/app.py
 ```
-The platform will be available at http://localhost:6060/
+The platform will be available at http://localhost:6060/ 🎉
 
-## Notes
+## Notes 📝
 
 - The platform uses a simple HTML and JavaScript frontend to interact with the Flask backend.
 - The `ModelTrainer` and `ModelEvaluator` classes are used for training and evaluating the model, respectively.
