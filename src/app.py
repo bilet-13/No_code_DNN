@@ -3,15 +3,16 @@ from flask import Flask, request, jsonify, render_template
 from ModelTrainer import ModelTrainer
 from ModelEvaluator import ModelEvaluator
 from API_function import get_data
-from utils import validate_payload, is_file_exists
+from utils import validate_payload, is_file_in_folder
 from utils import is_folder, create_folder
 import pathlib
 
-MODELS_FOLDER = 'models'
-TRAINING_FILES_FOLDER = 'data'
+CURRENT_FILE_PATH = str(pathlib.Path(__file__).resolve().parent)
+TRAINING_FILE_FOLDER_PATH = str(pathlib.Path(CURRENT_FILE_PATH) / 'data')
+MODELS_FOLDER_PATH = str(pathlib.Path(CURRENT_FILE_PATH) / 'models')
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = TRAINING_FILES_FOLDER
+app.config['UPLOAD_FOLDER'] = TRAINING_FILE_FOLDER_PATH
 
 
 @app.route('/')
@@ -22,7 +23,7 @@ def get_web_page():
 def upload():
     file = request.files.get('file')  # Use the get method to avoid KeyError
     if file:  # Check if the file is present
-        data_folder_path = pathlib.Path(TRAINING_FILES_FOLDER)
+        data_folder_path = pathlib.Path(TRAINING_FILE_FOLDER_PATH)
         file.save(data_folder_path.joinpath(file.filename))
         return jsonify({'success': True}), 200
     else:
@@ -31,7 +32,7 @@ def upload():
 
 @app.route ('/data', methods=['GET'])
 def get_files():
-    data_folder_path = pathlib.Path(TRAINING_FILES_FOLDER)
+    data_folder_path = pathlib.Path(TRAINING_FILE_FOLDER_PATH)
     files = [file_path.name for file_path in data_folder_path.glob('*.csv')]
     return jsonify({'files': files}), 200
 
@@ -48,13 +49,14 @@ def train_model():
     hidden1_size = payload['hidden1_size']
     hidden2_size = payload ['hidden2_size']
 
-    if not is_file_exists(file_name):
+    if not is_file_in_folder(file_name, TRAINING_FILE_FOLDER_PATH):
         return jsonify({"error": f"File not found: {file_name}"}), 400
 
     try:
         hidden1_size = None if hidden1_size <= 0 else hidden1_size
         hidden2_size = None if hidden2_size <= 0 else hidden2_size
-        X_train, y_train, X_test, y_text = get_data(file_name, input_columns, target_columns)
+        file_path = str(pathlib.Path(TRAINING_FILE_FOLDER_PATH, file_name))
+        X_train, y_train, X_test, y_text = get_data(file_path, input_columns, target_columns)
 
         model_trainer = ModelTrainer()
         model_trainer.init_model(
@@ -74,6 +76,6 @@ def train_model():
 
 
 if __name__ == '__main__':
-    if not is_folder(TRAINING_FILES_FOLDER):
-        create_folder(TRAINING_FILES_FOLDER)
+    if not is_folder(TRAINING_FILE_FOLDER_PATH):
+        create_folder(TRAINING_FILE_FOLDER_PATH)
     app.run(debug=True, port=6060)
