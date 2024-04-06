@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify, render_template
 from ModelTrainer import ModelTrainer
 from ModelEvaluator import ModelEvaluator
-from model_training import get_data
+from API_function import get_data
 from utils import validate_payload, is_file_exists
 from utils import is_folder, create_folder
 import pathlib
