@@ -96,7 +96,7 @@
       /* Response Message Styles */
       #uploadStatus,
       #response {
-        color:  #27ae60; /* Green for success messages */
+        color: #27ae60; /* Green for success messages */
         margin-top: 10px;
       }
       /* Additional Styles for Consistency */
@@ -128,8 +128,8 @@
         <form class="training-form">
           <div class="training-container">
             <div class="column">
-              <label for="dropdown">File of training data:</label>
-              <select id="dropdown">
+              <label for="files_list">File of training data:</label>
+              <select id="files_list">
                 <option value="disabled selected">Select training file</option>
               </select>
             </div>
@@ -196,6 +196,7 @@
               if (xhr.status === 200) {
                 document.getElementById("uploadStatus").innerText =
                   "File uploaded successfully";
+                getFilesList();
               } else {
                 document.getElementById("uploadStatus").innerText =
                   "File upload failed";
@@ -206,39 +207,7 @@
         });
 
       document.addEventListener("DOMContentLoaded", () => {
-        // Replace 'your_api_url' with the actual API  URL that lists files.
-        const apiUrl = "/data";
-
-        // Create an XHR object.
-        const xhr = new XMLHttpRequest();
-
-        // Open the request.
-        xhr.open("GET", apiUrl);
-
-        // Set the request header.
-        xhr.setRequestHeader("Content-Type", "application/json");
-
-        // Handle the response.
-        xhr.onload = function () {
-          if (xhr.status === 200) {
-            // Parse the JSON response.
-            const data = JSON.parse(xhr.responseText);
-
-            // Loop through the file list and create options.
-            data.files.forEach(function (file) {
-              const option = document.createElement("option");
-              option.value = file;
-              option.textContent = file;
-              document.getElementById("dropdown").appendChild(option);
-            });
-          } else {
-            // Handle errors here, e.g., show an error message.
-            console.error("API call failed.");
-          }
-        };
-
-        // Send the request.
-        xhr.send();
+        getFilesList();
       });
 
       document
@@ -246,7 +215,7 @@
         .addEventListener("submit", function (event) {
           event.preventDefault(); // Prevent the default form submission
           console.log("funciton calling");
-          const fileName = getSelectedOption("dropdown");
+          const fileName = getSelectedOption("files_list");
           if (fileName == null) {
             alert("Please select the training data file name.");
             return; // Break the function
@@ -309,7 +278,17 @@
           xhr.send(jsonData);
         });
 
-      document.addEventListener("DOMContentLoaded", () => {
+      function get_columns(inputId) {
+        const inputElement = document.getElementById(inputId);
+        if (inputElement) {
+          const inputValue = inputElement.value.trim();
+          if (inputValue) {
+            return inputValue.split(" ").map(Number);
+          }
+        }
+        return [];
+      }
+      function getFilesList() {
         // Replace 'your_api_url' with the actual API  URL that lists files.
         const apiUrl = "/data";
 
@@ -329,12 +308,11 @@
             const data = JSON.parse(xhr.responseText);
 
             // Loop through the file list and create options.
+            let optionsHTML = document.getElementById("files_list").innerHTML;
             data.files.forEach(function (file) {
-              const option = document.createElement("option");
-              option.value = file;
-              option.textContent = file;
-              document.getElementById("dropdown").appendChild(option);
+              optionsHTML += `<option value="${file}">${file}</option>`;
             });
+            document.getElementById("files_list").innerHTML = optionsHTML;
           } else {
             // Handle errors here, e.g., show an error message.
             console.error("API call failed.");
@@ -343,19 +321,7 @@
 
         // Send the request.
         xhr.send();
-      });
-
-      function get_columns(inputId) {
-        const inputElement = document.getElementById(inputId);
-        if (inputElement) {
-          const inputValue = inputElement.value.trim();
-          if (inputValue) {
-            return inputValue.split(" ").map(Number);
-          }
-        }
-        return [];
       }
-
       function getSelectedOption(selectId) {
         var selectElement = document.getElementById(selectId);
 
